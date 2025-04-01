@@ -15,10 +15,11 @@ namespace BlogProject.Controllers
         }
 
         [HttpGet("generate")]
-        public async Task<IActionResult> GenerateBlog([FromQuery] string topic = "Yapay Zeka  Geleek")
+        public async Task<IActionResult> GenerateBlog()
         {
-            var content = await _aiService.GenerateBlogAsync(topic);
-            return Ok(new { topic, content });
+            var blog = await _aiService.GenerateSmartBlogAsync();
+            return Ok(blog);
         }
+
     }
 }

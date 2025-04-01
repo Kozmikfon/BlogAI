@@ -1,7 +1,5 @@
 ﻿using BlogProject.Application.Services;
 using BlogProject.Core.Entities;
-using BlogProject.Application.Services;
-using BlogProject.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogProject.Controllers
@@ -11,26 +9,39 @@ namespace BlogProject.Controllers
     public class BlogController : ControllerBase
     {
         private readonly InMemoryBlogStore _store;
+        private readonly OpenAIService _aiService;
 
-        public BlogController(InMemoryBlogStore store)
+        public BlogController(InMemoryBlogStore store, OpenAIService aiService)
         {
             _store = store;
+            _aiService = aiService;
         }
 
+        //  Tüm blogları getir
         [HttpGet]
-        public ActionResult<List<Blog>> GetAll()
+        public IActionResult GetAll()
         {
-            return Ok(_store.GetAll());
+            var blogs = _store.GetAll();
+            return Ok(blogs);
         }
 
+        //  ID'ye göre detay
         [HttpGet("{id}")]
-        public ActionResult<Blog> GetById(int id)
+        public IActionResult GetById(int id)
         {
             var blog = _store.GetById(id);
-            if (blog == null) return NotFound();
+            if (blog == null)
+                return NotFound("Blog bulunamadı.");
             return Ok(blog);
         }
+
+        //  Elle blog üretmek için (opsiyonel)
+        [HttpPost("generate")]
+        public async Task<IActionResult> GenerateNew()
+        {
+            var result = await _aiService.GenerateSmartBlogAsync();
+            _store.Add(result);
+            return Ok(result);
+        }
     }
-
-
 }

@@ -1,44 +1,52 @@
 using BlogProject.Application.Services;
 using BlogProject.BackgroundJobs;
+using BlogProject.Core.Entities; // eðer ek olarak gerekiyorsa
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// --- Services ---
 
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Swagger (dökümantasyon)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddScoped<OpenAIService>();
-builder.Services.AddHostedService<BlogGenerationService>();
-builder.Services.AddSingleton<InMemoryBlogStore>();
-
-builder.Configuration.AddUserSecrets<Program>();
-var openAiKey = builder.Configuration["OpenAI:ApiKey"];
-
-builder.Services.AddCors(options =>
+builder.Services.AddSwaggerGen(c =>
 {
-    options.AddPolicy("AllowFrontend",
-        policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "AI Blog API", Version = "v1" });
 });
 
+//  OpenAI için HttpClient ile servis kaydý
+builder.Services.AddHttpClient<OpenAIService>();
 
+// Arka plan blog üretici servis
+builder.Services.AddHostedService<BlogGenerationService>();
 
+// Bellekte blog saklayan store
+builder.Services.AddSingleton<InMemoryBlogStore>();
+
+// CORS: React frontend için
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+});
+
+// OpenAI API key'i gizli tut (user-secrets)
+builder.Configuration.AddUserSecrets<Program>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- Middleware ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
