@@ -39,7 +39,7 @@ namespace BlogProject.BackgroundJobs
                     };
 
                     store.Add(blog);
-                    _logger.LogInformation($"✅ Blog eklendi: {blog.Title}");
+                    _logger.LogInformation($" Blog eklendi: {blog.Title}");
                 }
                 catch (Exception ex)
                 {

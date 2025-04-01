@@ -11,10 +11,13 @@ public class InMemoryBlogStore
         _blogs.Add(blog);
     }
 
-    public List<GeneratedBlog> GetAll() => _blogs;
+    public List<GeneratedBlog> GetAll()
+    {
+        return _blogs.OrderByDescending(b => b.Id).ToList();
+    }
 
     public GeneratedBlog? GetById(int id)
     {
-        return _blogs.FirstOrDefault(b => b.Id == id); // 🔥 ID ile eşleşen blogu getir
+        return _blogs.FirstOrDefault(b => b.Id == id); //  ID ile eşleşen blogu getir
     }
 }
