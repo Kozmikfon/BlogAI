@@ -43,5 +43,16 @@ namespace BlogProject.Controllers
             _store.Add(result);
             return Ok(result);
         }
+
+        [HttpDelete("{id}")]
+        public IActionResult Delete(int id)
+        {
+            var success = _store.Delete(id);
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
+
     }
 }

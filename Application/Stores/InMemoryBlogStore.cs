@@ -20,4 +20,14 @@ public class InMemoryBlogStore
     {
         return _blogs.FirstOrDefault(b => b.Id == id); //  ID ile eşleşen blogu getir
     }
+    public bool Delete(int id)
+    {
+        var blog = _blogs.FirstOrDefault(b => b.Id == id);
+        if (blog == null)
+            return false;
+
+        _blogs.Remove(blog);
+        return true;
+    }
+
 }
