@@ -15,7 +15,7 @@ namespace BlogProject.Controllers
         }
 
         [HttpGet("generate")]
-        public async Task<IActionResult> GenerateBlog([FromQuery] string topic = "Yapay Zeka ve Gelecek")
+        public async Task<IActionResult> GenerateBlog([FromQuery] string topic = "Yapay Zeka  Geleek")
         {
             var content = await _aiService.GenerateBlogAsync(topic);
             return Ok(new { topic, content });

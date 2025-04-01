@@ -27,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="BackgroundJobs\" />
     <Folder Include="Infrastructure\Data\" />
     <Folder Include="Infrastructure\Repositories\" />
   </ItemGroup>
