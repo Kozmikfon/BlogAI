@@ -14,6 +14,9 @@ builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddHostedService<BlogGenerationService>();
 builder.Services.AddSingleton<InMemoryBlogStore>();
 
+builder.Configuration.AddUserSecrets<Program>();
+var openAiKey = builder.Configuration["OpenAI:ApiKey"];
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
