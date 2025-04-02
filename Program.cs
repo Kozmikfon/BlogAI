@@ -1,4 +1,5 @@
 using BlogProject.Application.Services;
+using BlogProject.Application.Stores;
 using BlogProject.BackgroundJobs;
 using BlogProject.Core.Entities; // eðer ek olarak gerekiyorsa
 using Microsoft.OpenApi.Models;
@@ -19,12 +20,17 @@ builder.Services.AddSwaggerGen(c =>
 //  OpenAI için HttpClient ile servis kaydý
 builder.Services.AddHttpClient<OpenAIService>();
 
+
+
+
+
+
 // Arka plan blog üretici servis
 builder.Services.AddHostedService<BlogGenerationService>();
 
 // Bellekte blog saklayan store
 builder.Services.AddSingleton<InMemoryBlogStore>();
-
+builder.Services.AddSingleton<InMemoryCommentStore>();
 // CORS: React frontend için
 builder.Services.AddCors(options =>
 {
