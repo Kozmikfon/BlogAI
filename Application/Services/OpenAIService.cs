@@ -48,7 +48,7 @@ namespace BlogProject.Application.Services
         }
 
         // AI'den yapılandırılmış içerik üret (agent'tan gelen prompt ile)
-        public async Task<GeneratedBlog?> GenerateStructuredBlogAsync(string prompt)
+        public async Task<GeneratedBlog?> GenerateStructuredBlogAsync(string prompt,string category)
         {
             try
             {
@@ -91,6 +91,35 @@ namespace BlogProject.Application.Services
                     PropertyNameCaseInsensitive = true
                 });
 
+                // Kategori güvenli hale getiriliyor
+                var safeCategory = RemoveTurkishChars(category.ToLower());
+
+                // 🔧 Resim URL’sini düzelt
+                if (!string.IsNullOrWhiteSpace(result?.ImageUrl))
+                {
+                    if (result.ImageUrl.Contains("unsplash.com/photos/"))
+                    {
+                        var photoId = result.ImageUrl.Split('/').Last();
+                        result.ImageUrl = $"https://source.unsplash.com/{photoId}";
+                    }
+                    else if (result.ImageUrl.Contains("images.unsplash.com"))
+                    {
+                        result.ImageUrl = $"https://source.unsplash.com/600x400/?{safeCategory}";
+                    }
+                }
+
+                // Görsel yoksa default ver
+                if (string.IsNullOrWhiteSpace(result?.ImageUrl))
+                {
+                    result!.ImageUrl = $"https://source.unsplash.com/600x400/?{safeCategory}";
+                }
+
+
+
+
+
+
+
                 return result;
             }
             catch (Exception ex)
@@ -117,7 +146,9 @@ Giriş, gelişme, sonuç yapısında olsun.
 - Farklı bir konu seç (tekrarlama!)
 - 1-2 cümlelik bir özet yaz
 - 3 adet etiket (virgülle ayır) ver
-- Bir görsel URL’si ekle (Unsplash kullanılabilir)
+- Görsel URL'si verirken sadece ""https://source.unsplash.com/..."" ile başlayan, doğrudan açılabilen bir görsel linki üret.
+
+
 
 Cevabı şu formatta ve SADECE JSON olarak döndür:
 
@@ -200,5 +231,17 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 .GetString()
                 .Trim();
         }
+        private string RemoveTurkishChars(string input)
+        {
+            return input
+                .Replace("ç", "c").Replace("Ç", "C")
+                .Replace("ğ", "g").Replace("Ğ", "G")
+                .Replace("ı", "i").Replace("İ", "I")
+                .Replace("ö", "o").Replace("Ö", "O")
+                .Replace("ş", "s").Replace("Ş", "S")
+                .Replace("ü", "u").Replace("Ü", "U");
+        }
+
     }
+
 }

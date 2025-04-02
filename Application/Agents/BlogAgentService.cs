@@ -50,13 +50,13 @@ Yanıtı şu JSON formatında ver:
 }}";
 
             // 🧠 AI'den içerik al
-            var blog = await _ai.GenerateStructuredBlogAsync(prompt);
+            var blog = await _ai.GenerateStructuredBlogAsync(prompt,category);
 
             // 🛡️ İçerik kontrolü
             if (blog == null || string.IsNullOrWhiteSpace(blog.Content) || blog.Content.Length < 1000)
             {
                 _logger.LogWarning("⛔ Üretilen içerik yetersiz. Agent yeniden deniyor...");
-                blog = await _ai.GenerateStructuredBlogAsync(prompt);
+                blog = await _ai.GenerateStructuredBlogAsync(prompt,category);
             }
 
             // ❌ Hala başarısızsa
