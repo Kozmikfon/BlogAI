@@ -29,5 +29,21 @@ public class InMemoryBlogStore
         _blogs.Remove(blog);
         return true;
     }
+    public bool Update(int id, GeneratedBlog updated)
+    {
+        var blog=_blogs.FirstOrDefault(b => b.Id == id);
+
+        if (blog == null) return false;
+
+        
+        blog.Title = updated.Title;
+        blog.Summary = updated.Summary;
+        blog.Content = updated.Content;
+        blog.ImageUrl = updated.ImageUrl;
+        blog.Tags = updated.Tags;
+        //blog.Category= updated.Category;
+
+        return true;
+    }
 
 }

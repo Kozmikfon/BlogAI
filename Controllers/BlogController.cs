@@ -54,5 +54,14 @@ namespace BlogProject.Controllers
             return NoContent();
         }
 
+        [HttpPut("{id}")]
+        public IActionResult Update(int id, [FromBody] GeneratedBlog updateBlog)
+        {
+            var success=_store.Update(id, updateBlog);
+            if (!success)
+                return NotFound();
+
+            return NoContent();
+        }
     }
 }

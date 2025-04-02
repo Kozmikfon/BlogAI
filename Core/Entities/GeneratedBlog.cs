@@ -9,6 +9,7 @@ namespace BlogProject.Core.Entities
         public string Content { get; set; }
         public string ImageUrl { get; set; }
         public string Tags { get; set; }
+        //public string Category { get; set; }
         public DateTime CreatedAt { get; internal set; }
     }
 }
