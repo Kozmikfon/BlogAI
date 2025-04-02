@@ -1,4 +1,5 @@
-﻿using BlogProject.Application.Services;
+﻿using BlogProject.Application.Agents;
+using BlogProject.Application.Services;
 using BlogProject.Core.Entities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,36 +18,50 @@ namespace BlogProject.BackgroundJobs
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("🧠 Blog yazma servisi başlatıldı.");
+            _logger.LogInformation("🤖 Blog yazma servisi başlatıldı (AI Agent destekli).");
 
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
                     using var scope = _scopeFactory.CreateScope();
-                    var aiService = scope.ServiceProvider.GetRequiredService<OpenAIService>();
+
                     var store = scope.ServiceProvider.GetRequiredService<InMemoryBlogStore>();
+                    var aiAgent = scope.ServiceProvider.GetRequiredService<BlogAgentService>();
 
-                    var result = await aiService.GenerateSmartBlogAsync();
+                    // 📚 Son 5 blog başlığını al (tekrar üretimini engellemek için)
+                    var recentTitles = store.GetAll()
+                                            .OrderByDescending(x => x.CreatedAt)
+                                            .Take(5)
+                                            .Select(x => x.Title ?? "")
+                                            .ToList();
 
-                    var blog = new GeneratedBlog
+                    // 🔀 Kategori rotasyonu
+                    string[] categories = { "Teknoloji", "Bilim", "Sağlık", "Girişimcilik", "Yapay Zeka" };
+                    string category = categories[DateTime.Now.Day % categories.Length];
+
+                    _logger.LogInformation($"📡 Agent tetiklendi - Kategori: {category}");
+
+                    // 🧠 Blog üret
+                    var blog = await aiAgent.GenerateSmartBlogAsync(recentTitles, category);
+
+                    if (blog != null)
                     {
-                        Title = result.Title,
-                        Summary = result.Summary,
-                        Content = result.Content,
-                        ImageUrl = result.ImageUrl,
-                        Tags = result.Tags
-                    };
-
-                    store.Add(blog);
-                    _logger.LogInformation($" Blog eklendi: {blog.Title}");
+                        blog.Category = category;
+                        store.Add(blog);
+                        _logger.LogInformation($"✅ AI tarafından içerik eklendi: {blog.Title}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("⚠️ Agent içerik üretemedi.");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError($"❌ HATA: {ex.Message}");
+                    _logger.LogError($"🔥 Agent çalışırken hata oluştu: {ex.Message}");
                 }
 
-                // Tek sefer çalışsın diye uzun delay
+                // 🕒 Bir sonraki denemeye kadar bekle (TEST: 9999 sn)
                 await Task.Delay(TimeSpan.FromSeconds(9999), stoppingToken);
             }
         }

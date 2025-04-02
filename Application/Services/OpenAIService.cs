@@ -18,6 +18,7 @@ namespace BlogProject.Application.Services
             _logger = logger;
         }
 
+        // Ana metot – agent veya klasik sistem tarafından çağrılır
         public async Task<GeneratedBlog> GenerateSmartBlogAsync()
         {
             try
@@ -31,7 +32,7 @@ namespace BlogProject.Application.Services
                 _logger.LogWarning("❌ JSON üretimi başarısız: " + ex.Message);
             }
 
-            // Fallback: klasik üretim
+            // Fallback klasik üretim
             var topic = await GenerateTopicAsync();
             var content = await GenerateBlogTextAsync(topic);
             var title = await GenerateTitleAsync(content);
@@ -46,7 +47,60 @@ namespace BlogProject.Application.Services
             };
         }
 
-        // --- JSON formatlı üretim ---
+        // AI'den yapılandırılmış içerik üret (agent'tan gelen prompt ile)
+        public async Task<GeneratedBlog?> GenerateStructuredBlogAsync(string prompt)
+        {
+            try
+            {
+                _httpClient.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", _apiKey);
+
+                var request = new
+                {
+                    model = "gpt-3.5-turbo",
+                    messages = new[] {
+                        new { role = "user", content = prompt }
+                    },
+                    temperature = 0.8
+                };
+
+                var content = new StringContent(
+                    JsonSerializer.Serialize(request),
+                    Encoding.UTF8,
+                    "application/json");
+
+                var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+                _logger.LogInformation("📥 Agent AI cevabı: " + responseString);
+
+                var json = JsonDocument.Parse(responseString);
+                var rawContent = json.RootElement
+                    .GetProperty("choices")[0]
+                    .GetProperty("message")
+                    .GetProperty("content")
+                    .GetString();
+
+                var cleaned = rawContent?
+                    .Replace("```json", "")
+                    .Replace("```", "")
+                    .Trim();
+
+                var result = JsonSerializer.Deserialize<GeneratedBlog>(cleaned!, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("🛑 Agent JSON çözümlemesi başarısız: " + ex.Message);
+                return null;
+            }
+        }
+
+        // AI'den doğrudan JSON blog üret
         private async Task<GeneratedBlog> GenerateBlogFromAI()
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
@@ -54,8 +108,18 @@ namespace BlogProject.Application.Services
             var prompt = @"
 Teknoloji, yapay zeka veya bilimle ilgili bir blog yazısı oluştur.
 Giriş, gelişme, sonuç yapısında olsun.
-Ayrıca başlık, özet, 3 etiket ve görsel URL'si ver.
-Cevabı bu formatta döndür:
+
+🎯 Kurallar:
+- İçerik en az **800 kelime** uzunluğunda olsun (çok detaylı yaz)
+- Giriş, gelişme, sonuç bölümleri olsun
+- Gerçek bilgiler ve örneklerle destekle
+- Kategoriyle alakalı etkileyici bir başlık üret
+- Farklı bir konu seç (tekrarlama!)
+- 1-2 cümlelik bir özet yaz
+- 3 adet etiket (virgülle ayır) ver
+- Bir görsel URL’si ekle (Unsplash kullanılabilir)
+
+Cevabı şu formatta ve SADECE JSON olarak döndür:
 
 {
   ""title"": ""..."",
@@ -78,29 +142,25 @@ Cevabı bu formatta döndür:
             var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
             var responseString = await response.Content.ReadAsStringAsync();
 
-            _logger.LogInformation("📥 AI cevabı: " + responseString);
+            _logger.LogInformation("📥 JSON formatlı AI cevabı: " + responseString);
 
             var json = JsonDocument.Parse(responseString);
-            var message = json.RootElement
+            var raw = json.RootElement
                 .GetProperty("choices")[0]
                 .GetProperty("message")
                 .GetProperty("content")
-                .ToString();
+                .GetString();
 
-            Console.WriteLine("🎯 Temizlenmemiş AI cevabı:");
-            Console.WriteLine(message);
-
-
-            var cleaned = message
+            var cleaned = raw?
                 .Replace("```json", "")
                 .Replace("```", "")
                 .Trim();
 
-            var result = JsonSerializer.Deserialize<GeneratedBlog>(cleaned);
+            var result = JsonSerializer.Deserialize<GeneratedBlog>(cleaned!);
             return result!;
         }
 
-        // --- Klasik fallback üretimler ---
+        // Fallback üretim – konu + içerik + başlık
         private async Task<string> GenerateTopicAsync() =>
             await SimpleChat("Sen yaratıcı bir blog konusu üreticisisin.",
                 "Yapay zeka, teknoloji veya gelecekle ilgili bir blog konusu öner.");
@@ -118,8 +178,7 @@ Cevabı bu formatta döndür:
             var request = new
             {
                 model = "gpt-3.5-turbo",
-                messages = new[]
-                {
+                messages = new[] {
                     new { role = "system", content = system },
                     new { role = "user", content = user }
                 },

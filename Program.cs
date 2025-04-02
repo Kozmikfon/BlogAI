@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using BlogProject.Application.Agents;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,7 @@ builder.Services.AddSwaggerGen(c =>
 
 //  OpenAI için HttpClient ile servis kaydý
 builder.Services.AddHttpClient<OpenAIService>();
+builder.Services.AddScoped<OpenAIService>();
 
 
 
@@ -44,6 +46,7 @@ builder.Services.AddCors(options =>
 
 // OpenAI API key'i gizli tut (user-secrets)
 builder.Configuration.AddUserSecrets<Program>();
+builder.Services.AddScoped<BlogAgentService>();
 
 //jwt
 builder.Services.AddScoped<JwtService>();
