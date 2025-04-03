@@ -26,6 +26,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddHttpClient<OpenAIService>();
 builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddHttpClient<PexelsService>();
+builder.Services.AddHttpClient(); // client factory için gerekli
 
 
 

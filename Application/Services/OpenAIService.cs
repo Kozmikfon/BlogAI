@@ -8,13 +8,16 @@ namespace BlogProject.Application.Services
     public class OpenAIService
     {
         private readonly HttpClient _httpClient;
+        private readonly HttpClient _pexelsClient;
+
         private readonly string _apiKey;
         private readonly ILogger<OpenAIService> _logger;
         private readonly IConfiguration _configuration;
 
-        public OpenAIService(HttpClient httpClient, IConfiguration config, ILogger<OpenAIService> logger)
+        public OpenAIService(HttpClient httpClient, IHttpClientFactory clientFactory, IConfiguration config, ILogger<OpenAIService> logger)
         {
             _httpClient = httpClient;
+            _pexelsClient = clientFactory.CreateClient(); // yeni client
             _configuration = config;
             _apiKey = config["OpenAI:ApiKey"]!;
             _logger = logger;
@@ -54,6 +57,14 @@ namespace BlogProject.Application.Services
         {
             try
             {
+                // ✅ Güvenli kategori üret
+                if (string.IsNullOrWhiteSpace(category))
+                    category = "technology";
+
+                category = RemoveTurkishChars(category.ToLower().Trim());
+
+                // 🧠 OpenAI çağrısı için header'ı ayarla
+                _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Authorization =
                     new AuthenticationHeaderValue("Bearer", _apiKey);
 
@@ -95,8 +106,15 @@ namespace BlogProject.Application.Services
 
                 if (result != null)
                 {
+                    // 🔄 Önce Pexels görseli al
                     result.ImageUrl = await GetImageFromPexelsAsync(category);
+
+                    // ✅ Sonra OpenAI için Authorization tekrar ekleniyor
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    _httpClient.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", _apiKey);
                 }
+
 
 
 
@@ -214,15 +232,19 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 .Trim();
         }
 
-        private async Task<string> GetImageFromPexelsAsync(string category)
+        public async Task<string> GetImageFromPexelsAsync(string category)
         {
             try
             {
                 var pexelsKey = _configuration["Pexels:ApiKey"];
+
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("Authorization", pexelsKey);
 
-                var response = await _httpClient.GetAsync($"https://api.pexels.com/v1/search?query={category}&per_page=15");
+                var searchQuery = TranslateCategory(category);
+                _logger.LogInformation($"📷 Pexels araması yapılıyor: {searchQuery}");
+
+                var response = await _httpClient.GetAsync($"https://api.pexels.com/v1/search?query={searchQuery}&per_page=15");
                 var json = await response.Content.ReadAsStringAsync();
 
                 using var doc = JsonDocument.Parse(json);
@@ -235,6 +257,8 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                     var imageUrl = photos[index].GetProperty("src").GetProperty("medium").GetString();
                     return imageUrl!;
                 }
+
+                _logger.LogWarning("⚠️ Pexels: Arama sonucunda görsel bulunamadı.");
             }
             catch (Exception ex)
             {
@@ -243,5 +267,46 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
 
             return "https://via.placeholder.com/600x400?text=No+Image";
         }
+
+
+
+
+
+        private string RemoveTurkishChars(string input)
+        {
+            var replacements = new Dictionary<char, char>
+    {
+        { 'ç', 'c' }, { 'ğ', 'g' }, { 'ı', 'i' }, { 'ö', 'o' },
+        { 'ş', 's' }, { 'ü', 'u' },
+        { 'Ç', 'C' }, { 'Ğ', 'G' }, { 'İ', 'I' }, { 'Ö', 'O' },
+        { 'Ş', 'S' }, { 'Ü', 'U' }
+    };
+
+            var chars = input.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (replacements.ContainsKey(chars[i]))
+                {
+                    chars[i] = replacements[chars[i]];
+                }
+            }
+
+            return new string(chars);
+        }
+        private string TranslateCategory(string category)
+        {
+            return category.ToLower() switch
+            {
+                "teknoloji" => "technology",
+                "bilim" => "science",
+                "sağlık" => "health",
+                "girişimcilik" => "entrepreneurship",
+                "yapay zeka" => "artificial intelligence",
+                _ => "technology"
+            };
+        }
+
+
+
     }
 }

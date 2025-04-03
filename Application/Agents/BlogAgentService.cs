@@ -52,19 +52,18 @@ Yanıtı şu JSON formatında ver:
             // 🧠 AI'den içerik al
             var blog = await _ai.GenerateStructuredBlogAsync(prompt,category);
 
-            // 🛡️ İçerik kontrolü
-            if (blog == null || string.IsNullOrWhiteSpace(blog.Content) || blog.Content.Length < 1000)
+            if (blog == null || string.IsNullOrWhiteSpace(blog.Content) || blog.Content.Length < 400)
             {
-                _logger.LogWarning("⛔ Üretilen içerik yetersiz. Agent yeniden deniyor...");
+                _logger.LogWarning("⛔ İçerik kısa. Tekrar deneniyor...");
                 blog = await _ai.GenerateStructuredBlogAsync(prompt, category);
             }
 
-            // ❌ Hala başarısızsa
-            if (blog == null)
+            // ✅ GÖRSEL BURADA EKLENİYOR
+            if (blog != null && string.IsNullOrWhiteSpace(blog.ImageUrl))
             {
-                _logger.LogError("❌ Agent 2. denemede de içerik üretemedi.");
-                return null;
+                blog.ImageUrl = await _ai.GetImageFromPexelsAsync(category);
             }
+
 
             _logger.LogInformation($"✅ Agent tarafından içerik üretildi: {blog.Title}");
             return blog;

@@ -22,29 +22,28 @@ namespace BlogProject.BackgroundJobs
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var now = DateTime.Now;
-
-                // Gelişmiş zamanlama yerine her zaman çalıştır (test için)
-                if (true)
+                try
                 {
                     using var scope = _scopeFactory.CreateScope();
 
                     var store = scope.ServiceProvider.GetRequiredService<InMemoryBlogStore>();
                     var aiAgent = scope.ServiceProvider.GetRequiredService<BlogAgentService>();
 
-                    // Son başlıkları al
+                    // 📚 Son başlıkları al
                     var lastTitles = store.GetAll()
                                           .OrderByDescending(x => x.CreatedAt)
                                           .Take(5)
                                           .Select(x => x.Title ?? "")
                                           .ToList();
 
-                    // Günlük kategori belirle
+                    // 🔀 Günlük kategori belirle
                     string[] categories = { "Teknoloji", "Bilim", "Sağlık", "Girişimcilik", "Yapay Zeka" };
+                    var now = DateTime.Now;
                     var category = categories[now.Day % categories.Length];
 
                     _logger.LogInformation($"📡 Agent tetiklendi - Kategori: {category}");
 
+                    // 🧠 Blog üret
                     var blog = await aiAgent.GenerateSmartBlogAsync(lastTitles, category);
 
                     if (blog != null)
@@ -58,11 +57,12 @@ namespace BlogProject.BackgroundJobs
                         _logger.LogWarning("⛔ Blog üretilemedi.");
                     }
 
-                    await Task.Delay(TimeSpan.FromSeconds(9999), stoppingToken); // test için uzun bekleme
+                    // 🕓 Bekleme süresi (test için uzun, üretimde kısaltılabilir)
+                    await Task.Delay(TimeSpan.FromSeconds(9999), stoppingToken);
                 }
-                else
+                catch (Exception ex)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+                    _logger.LogError($"🔥 BlogGenerationService hata: {ex.Message}");
                 }
             }
         }
