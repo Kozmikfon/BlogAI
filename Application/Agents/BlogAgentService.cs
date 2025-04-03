@@ -56,7 +56,7 @@ Yanıtı şu JSON formatında ver:
             if (blog == null || string.IsNullOrWhiteSpace(blog.Content) || blog.Content.Length < 1000)
             {
                 _logger.LogWarning("⛔ Üretilen içerik yetersiz. Agent yeniden deniyor...");
-                blog = await _ai.GenerateStructuredBlogAsync(prompt,category);
+                blog = await _ai.GenerateStructuredBlogAsync(prompt, category);
             }
 
             // ❌ Hala başarısızsa

@@ -25,6 +25,8 @@ builder.Services.AddSwaggerGen(c =>
 //  OpenAI için HttpClient ile servis kaydý
 builder.Services.AddHttpClient<OpenAIService>();
 builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddHttpClient<PexelsService>();
+
 
 
 

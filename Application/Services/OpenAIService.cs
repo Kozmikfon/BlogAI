@@ -10,10 +10,12 @@ namespace BlogProject.Application.Services
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private readonly ILogger<OpenAIService> _logger;
+        private readonly IConfiguration _configuration;
 
         public OpenAIService(HttpClient httpClient, IConfiguration config, ILogger<OpenAIService> logger)
         {
             _httpClient = httpClient;
+            _configuration = config;
             _apiKey = config["OpenAI:ApiKey"]!;
             _logger = logger;
         }
@@ -48,7 +50,7 @@ namespace BlogProject.Application.Services
         }
 
         // AI'den yapılandırılmış içerik üret (agent'tan gelen prompt ile)
-        public async Task<GeneratedBlog?> GenerateStructuredBlogAsync(string prompt,string category)
+        public async Task<GeneratedBlog?> GenerateStructuredBlogAsync(string prompt, string category)
         {
             try
             {
@@ -59,8 +61,8 @@ namespace BlogProject.Application.Services
                 {
                     model = "gpt-3.5-turbo",
                     messages = new[] {
-                        new { role = "user", content = prompt }
-                    },
+                         new { role = "user", content = prompt }
+            },
                     temperature = 0.8
                 };
 
@@ -91,31 +93,10 @@ namespace BlogProject.Application.Services
                     PropertyNameCaseInsensitive = true
                 });
 
-                // Kategori güvenli hale getiriliyor
-                var safeCategory = RemoveTurkishChars(category.ToLower());
-
-                // 🔧 Resim URL’sini düzelt
-                if (!string.IsNullOrWhiteSpace(result?.ImageUrl))
+                if (result != null)
                 {
-                    if (result.ImageUrl.Contains("unsplash.com/photos/"))
-                    {
-                        var photoId = result.ImageUrl.Split('/').Last();
-                        result.ImageUrl = $"https://source.unsplash.com/{photoId}";
-                    }
-                    else if (result.ImageUrl.Contains("images.unsplash.com"))
-                    {
-                        result.ImageUrl = $"https://source.unsplash.com/600x400/?{safeCategory}";
-                    }
+                    result.ImageUrl = await GetImageFromPexelsAsync(category);
                 }
-
-                // Görsel yoksa default ver
-                if (string.IsNullOrWhiteSpace(result?.ImageUrl))
-                {
-                    result!.ImageUrl = $"https://source.unsplash.com/600x400/?{safeCategory}";
-                }
-
-
-
 
 
 
@@ -128,6 +109,7 @@ namespace BlogProject.Application.Services
                 return null;
             }
         }
+
 
         // AI'den doğrudan JSON blog üret
         private async Task<GeneratedBlog> GenerateBlogFromAI()
@@ -231,17 +213,35 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 .GetString()
                 .Trim();
         }
-        private string RemoveTurkishChars(string input)
+
+        private async Task<string> GetImageFromPexelsAsync(string category)
         {
-            return input
-                .Replace("ç", "c").Replace("Ç", "C")
-                .Replace("ğ", "g").Replace("Ğ", "G")
-                .Replace("ı", "i").Replace("İ", "I")
-                .Replace("ö", "o").Replace("Ö", "O")
-                .Replace("ş", "s").Replace("Ş", "S")
-                .Replace("ü", "u").Replace("Ü", "U");
+            try
+            {
+                var pexelsKey = _configuration["Pexels:ApiKey"];
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Authorization", pexelsKey);
+
+                var response = await _httpClient.GetAsync($"https://api.pexels.com/v1/search?query={category}&per_page=15");
+                var json = await response.Content.ReadAsStringAsync();
+
+                using var doc = JsonDocument.Parse(json);
+                var photos = doc.RootElement.GetProperty("photos");
+
+                if (photos.GetArrayLength() > 0)
+                {
+                    var rnd = new Random();
+                    var index = rnd.Next(photos.GetArrayLength());
+                    var imageUrl = photos[index].GetProperty("src").GetProperty("medium").GetString();
+                    return imageUrl!;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError("📷 Pexels görsel hatası: " + ex.Message);
+            }
+
+            return "https://via.placeholder.com/600x400?text=No+Image";
         }
-
     }
-
 }

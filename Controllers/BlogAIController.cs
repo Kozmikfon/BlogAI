@@ -1,4 +1,5 @@
-﻿using BlogProject.Application.Services;
+﻿using BlogProject.Application.Agents;
+using BlogProject.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlogProject.Controllers
@@ -21,5 +22,25 @@ namespace BlogProject.Controllers
             return Ok(blog);
         }
 
+        [HttpPost("generate-test")]
+        public async Task<IActionResult> GenerateTestBlog([FromQuery] string category = "teknoloji")
+        {
+            var recentTitles = new List<string>(); // test için boş
+            var agent = HttpContext.RequestServices.GetRequiredService<BlogAgentService>();
+            var store = HttpContext.RequestServices.GetRequiredService<InMemoryBlogStore>();
+
+            var blog = await agent.GenerateSmartBlogAsync(recentTitles, category);
+            if (blog == null)
+                return StatusCode(500, "AI içerik üretemedi");
+
+            blog.Category = category;
+            store.Add(blog);
+            return Ok(blog);
+        }
+
+
     }
+
+
+
 }
