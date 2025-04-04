@@ -21,15 +21,14 @@ namespace BlogProject.Controllers
             var blog = await _aiService.GenerateSmartBlogAsync();
             return Ok(blog);
         }
-
         [HttpPost("generate-test")]
         public async Task<IActionResult> GenerateTestBlog([FromQuery] string category = "teknoloji")
         {
-            var recentTitles = new List<string>(); // test için boş
             var agent = HttpContext.RequestServices.GetRequiredService<BlogAgentService>();
             var store = HttpContext.RequestServices.GetRequiredService<InMemoryBlogStore>();
 
-            var blog = await agent.GenerateSmartBlogAsync(recentTitles, category);
+            var blog = await agent.GenerateSmartBlogAsync(category);
+
             if (blog == null)
                 return StatusCode(500, "AI içerik üretemedi");
 
@@ -37,6 +36,7 @@ namespace BlogProject.Controllers
             store.Add(blog);
             return Ok(blog);
         }
+
 
 
     }

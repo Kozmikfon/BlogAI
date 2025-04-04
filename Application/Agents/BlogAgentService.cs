@@ -1,5 +1,6 @@
-﻿using BlogProject.Core.Entities;
-using BlogProject.Application.Services;
+﻿using BlogProject.Application.Services;
+using BlogProject.Core.Entities;
+using BlogProject.Application.Stores;
 using Microsoft.Extensions.Logging;
 
 namespace BlogProject.Application.Agents
@@ -7,40 +8,33 @@ namespace BlogProject.Application.Agents
     public class BlogAgentService
     {
         private readonly OpenAIService _ai;
+        private readonly InMemoryBlogStore _store;
         private readonly ILogger<BlogAgentService> _logger;
 
-        public BlogAgentService(OpenAIService ai, ILogger<BlogAgentService> logger)
+        public BlogAgentService(OpenAIService ai, InMemoryBlogStore store, ILogger<BlogAgentService> logger)
         {
             _ai = ai;
+            _store = store;
             _logger = logger;
         }
 
-        public async Task<GeneratedBlog?> GenerateSmartBlogAsync(List<string> recentTitles, string category)
+        public async Task<GeneratedBlog?> GenerateSmartBlogAsync(string category)
         {
-            // 🔧 Agent Prompt
+            var recentTitles = _store.GetRecentTitles();
+
             string prompt = $@"
 Bugün için {category} kategorisinde yaratıcı, özgün ve bilgi dolu bir blog yazısı üret.
 
-🧠 Son 5 başlık (bunlara benzemesin):
+❗️ Son 10 başlık:
 - {string.Join("\n- ", recentTitles)}
 
+Bu başlıklara benzemeyen yeni bir konu üret.
+İçeriğin yapısı:
+- Giriş, Gelişme, Sonuç
+- En az 800 kelime
+- 1 özet, 3 etiket, 1 görsel URL
 
-Blog yazısı şu formatta olsun:
-- Giriş: Konuya ilgi çeken bir başlangıç
-- Gelişme: Konunun detaylı açıklaması, örneklerle destekle
-- Sonuç: Konuyu özetle, okuyucuya düşünce ver
-
-🎯 Kurallar:
-- İçerik en az **800 kelime** uzunluğunda olsun (çok detaylı yaz)
-- Giriş, gelişme, sonuç bölümleri olsun
-- Gerçek bilgiler ve örneklerle destekle
-- Kategoriyle alakalı etkileyici bir başlık üret
-- Farklı bir konu seç (tekrarlama!)
-- 1-2 cümlelik bir özet yaz
-- 3 adet etiket (virgülle ayır) ver
-- Bir görsel URL’si ekle (Unsplash kullanılabilir)
-
-Yanıtı şu JSON formatında ver:
+Cevabı şu JSON formatında ver:
 {{
   ""title"": ""..."",
   ""summary"": ""..."",
@@ -49,8 +43,7 @@ Yanıtı şu JSON formatında ver:
   ""tags"": ""...""
 }}";
 
-            // 🧠 AI'den içerik al
-            var blog = await _ai.GenerateStructuredBlogAsync(prompt,category);
+            var blog = await _ai.GenerateStructuredBlogAsync(prompt, category);
 
             if (blog == null || string.IsNullOrWhiteSpace(blog.Content) || blog.Content.Length < 400)
             {
@@ -58,14 +51,12 @@ Yanıtı şu JSON formatında ver:
                 blog = await _ai.GenerateStructuredBlogAsync(prompt, category);
             }
 
-            // ✅ GÖRSEL BURADA EKLENİYOR
             if (blog != null && string.IsNullOrWhiteSpace(blog.ImageUrl))
             {
                 blog.ImageUrl = await _ai.GetImageFromPexelsAsync(category);
             }
 
-
-            _logger.LogInformation($"✅ Agent tarafından içerik üretildi: {blog.Title}");
+            _logger.LogInformation($"✅ Agent tarafından içerik üretildi: {blog?.Title}");
             return blog;
         }
     }

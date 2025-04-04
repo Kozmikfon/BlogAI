@@ -45,5 +45,15 @@ public class InMemoryBlogStore
 
         return true;
     }
+    public List<string> GetRecentTitles(int count = 10)
+    {
+        return _blogs
+            .OrderByDescending(b => b.CreatedAt)
+            .Take(count)
+            .Select(b => b.Title ?? "")
+            .ToList();
+    }
+
+
 
 }
