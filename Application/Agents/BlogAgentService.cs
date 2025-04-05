@@ -59,5 +59,16 @@ Cevabı şu JSON formatında ver:
             _logger.LogInformation($"✅ Agent tarafından içerik üretildi: {blog?.Title}");
             return blog;
         }
+        public async Task GenerateSmartBlogAndSave(string category)
+        {
+            var blog = await GenerateSmartBlogAsync(category);
+            if (blog != null)
+            {
+                blog.Category = category;
+                _store.Add(blog);
+                _logger.LogInformation($"✅ Hangfire ile eklendi: {blog.Title}");
+            }
+        }
+
     }
 }
