@@ -16,35 +16,52 @@ namespace BlogProject.BackgroundJobs
             _scopeFactory = scopeFactory;
         }
 
-       protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-{
-    _logger.LogInformation("🤖 AI Agent tabanlı blog üretim servisi başladı.");
-
-    while (!stoppingToken.IsCancellationRequested)
-    {
-        using var scope = _scopeFactory.CreateScope();
-        var store = scope.ServiceProvider.GetRequiredService<InMemoryBlogStore>();
-        var aiAgent = scope.ServiceProvider.GetRequiredService<BlogAgentService>();
-
-        string[] categories = { "Teknoloji", "Bilim", "Sağlık", "Girişimcilik", "Yapay Zeka" };
-        var category = categories[DateTime.Now.Day % categories.Length];
-
-        var blog = await aiAgent.GenerateSmartBlogAsync(category);
-
-        if (blog != null)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            blog.Category = category;
-            store.Add(blog);
-            _logger.LogInformation($"✅ Blog eklendi: {blog.Title}");
-        }
-        else
-        {
-            _logger.LogWarning("⛔ Blog üretilemedi.");
+            _logger.LogInformation("🤖 Blog yazma servisi başlatıldı (Zamanlama destekli)");
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                var now = DateTime.Now;
+
+                // 🔁 SADECE 12:00 VEYA 02:00'DE çalış
+                if ((now.Hour == 0 && now.Minute == 0) || (now.Hour == 2 && now.Minute == 0))
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var store = scope.ServiceProvider.GetRequiredService<InMemoryBlogStore>();
+                    var aiAgent = scope.ServiceProvider.GetRequiredService<BlogAgentService>();
+
+                    var lastTitles = store.GetAll()
+                                          .OrderByDescending(x => x.CreatedAt)
+                                          .Take(10)
+                                          .Select(x => x.Title ?? "")
+                                          .ToList();
+
+                    string[] categories = { "Teknoloji", "Bilim", "Sağlık", "Girişimcilik", "Yapay Zeka" };
+                    var category = categories[now.Day % categories.Length];
+
+                    _logger.LogInformation($"📡 Agent tetiklendi - {now} - Kategori: {category}");
+
+                    var blog = await aiAgent.GenerateSmartBlogAsync( category);
+                    if (blog != null)
+                    {
+                        blog.Category = category;
+                        store.Add(blog);
+                        _logger.LogInformation($"✅ Blog eklendi: {blog.Title}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("⛔ Blog üretilemedi.");
+                    }
+
+                    await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken); // tekrar tetiklenmemesi için
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(30), stoppingToken); // sürekli saat kontrolü
+            }
         }
 
-        await Task.Delay(TimeSpan.FromSeconds(9999), stoppingToken); // TEST amaçlı
-    }
-}
+
 
 
     }
