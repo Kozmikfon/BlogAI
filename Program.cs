@@ -1,4 +1,4 @@
-using BlogProject.Application.Services;
+Ôªøusing BlogProject.Application.Services;
 using BlogProject.Application.Stores;
 using BlogProject.BackgroundJobs;
 using BlogProject.Core.Entities;
@@ -8,7 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using BlogProject.Application.Agents;
 using Hangfire;
-using Hangfire.MemoryStorage; // ? hangfire memory
+using Hangfire.MemoryStorage; // ‚Üê hangfire memory
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -30,7 +30,7 @@ builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddHttpClient<PexelsService>();
 builder.Services.AddHttpClient();
 
-// Blog ¸retici agent ve store'lar
+// Blog √ºretici agent ve store'lar
 builder.Services.AddSingleton<InMemoryBlogStore>();
 builder.Services.AddSingleton<InMemoryCommentStore>();
 builder.Services.AddScoped<BlogAgentService>();
@@ -63,16 +63,16 @@ builder.Services.AddCors(options =>
         policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
 
-// Hangfire (In-Memory kullan˝yoruz)
+// Hangfire (In-Memory kullanƒ±yoruz)
 builder.Services.AddHangfire(config =>
     config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
           .UseSimpleAssemblyNameTypeSerializer()
           .UseDefaultTypeSerializer()
           .UseMemoryStorage());
 
-builder.Services.AddHangfireServer(); // Worker ba˛lat
+builder.Services.AddHangfireServer(); // Worker ba≈ülat
 
-// Background Service (manuel tetikleme iÁin h‚l‚ mevcut)
+// Background Service (manuel tetikleme i√ßin h√¢l√¢ mevcut)
 builder.Services.AddHostedService<BlogGenerationService>();
 
 // --- App Build ---
@@ -84,7 +84,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Middleware s˝ras˝ ˆnemli
+// Middleware sƒ±rasƒ± √∂nemli
 app.UseRouting();
 app.UseCors("AllowFrontend");
 app.UseHttpsRedirection();
@@ -95,18 +95,21 @@ app.UseAuthorization();
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapControllers();
-    endpoints.MapHangfireDashboard(); // ?? Hangfire aray¸z¸
+    endpoints.MapHangfireDashboard(); // üöÄ Hangfire aray√ºz√º
 });
 
-// ?? Hangfire zamanlama
-RecurringJob.AddOrUpdate<BlogAgentJob>(
-    "blog-12",
-    job => job.GenerateScheduledBlog("12:00"),
-    "0 12 * * *", TimeZoneInfo.Local);
+// üß† Hangfire zamanlama
+RecurringJob.AddOrUpdate<BlogAgentService>(
+    "ai-blog-generator-00",
+    service => service.GenerateSmartBlogAsync("teknoloji"),
+    "0 0 * * *" // her g√ºn saat 00:00
+);
 
-RecurringJob.AddOrUpdate<BlogAgentJob>(
-    "blog-02",
-    job => job.GenerateScheduledBlog("02:00"),
-    "0 2 * * *", TimeZoneInfo.Local);
+RecurringJob.AddOrUpdate<BlogAgentService>(
+    "ai-blog-generator-02",
+    service => service.GenerateSmartBlogAsync("Teknoloji"),
+    "0 2 * * *" // her g√ºn saat 02:00
+);
+
 
 app.Run();
