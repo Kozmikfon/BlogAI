@@ -1,53 +1,41 @@
 ﻿using BlogProject.Core.Entities;
-using BlogProject.Application.Stores;
+using BlogProject.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogProject.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class CommentController : ControllerBase
+    [ApiController]
+    public class CommentsController : ControllerBase
     {
-        private readonly InMemoryCommentStore _commentStore;
+        private readonly BlogDbContext _context;
 
-        public CommentController(InMemoryCommentStore commentStore)
+        public CommentsController(BlogDbContext context)
         {
-            _commentStore = commentStore;
+            _context = context;
         }
 
-        // 🔽 1. Belirli bir bloga ait yorumları getir
-        [HttpGet("blog/{blogId}")]
-        public IActionResult GetByBlog(int blogId)
-        {
-            var comments = _commentStore.GetByBlogId(blogId);
-            return Ok(comments);
-        }
-
-        // 🔽 2. Tüm yorumları getir (admin için)
+        // GET: api/comments?blogId=1
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetComments(int blogId)
         {
-            var comments = _commentStore.GetAll();
+            var comments = await _context.Comments
+                .Where(c => c.BlogId == blogId)
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+
             return Ok(comments);
         }
 
-        // 🔼 3. Yeni yorum ekle
+        // POST: api/comments
         [HttpPost]
-        public IActionResult Add([FromBody] Comment comment)
+        public async Task<IActionResult> AddComment([FromBody] Comment comment)
         {
-            _commentStore.Add(comment);
+            comment.CreatedAt = DateTime.Now;
+            _context.Comments.Add(comment);
+            await _context.SaveChangesAsync();
             return Ok(comment);
-        }
-
-        // 🗑️ 4. Yorum sil
-        [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
-        {
-            var success = _commentStore.Delete(id);
-            if (!success)
-                return NotFound();
-
-            return NoContent();
         }
     }
 }

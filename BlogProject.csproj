@@ -35,9 +35,4 @@
     <ContainerPort Include="8081" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Infrastructure\Context\" />
-    <Folder Include="Infrastructure\Repositories\" />
-  </ItemGroup>
-
 </Project>

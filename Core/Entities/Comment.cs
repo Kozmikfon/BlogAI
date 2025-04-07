@@ -3,10 +3,13 @@
     public class Comment
     {
         public int Id { get; set; }
-        public int BlogId { get; set; }
-        public string UserName { get; set; }
-        public string Text { get; set; }
+        public string Text { get; set; } = string.Empty;
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        public int BlogId { get; set; }
+
+        // Entity Framework ilişki için (opsiyonel)
+        public Blog? Blog { get; set; }
     }
 }

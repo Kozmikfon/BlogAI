@@ -1,26 +1,31 @@
 ﻿using BlogProject.Application.Services;
 using BlogProject.Core.Entities;
-using BlogProject.Application.Stores;
+using BlogProject.Infrastructure.Data; // Veritabanı context
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogProject.Application.Agents
 {
     public class BlogAgentService
     {
         private readonly OpenAIService _ai;
-        private readonly InMemoryBlogStore _store;
+        private readonly BlogDbContext _db;
         private readonly ILogger<BlogAgentService> _logger;
 
-        public BlogAgentService(OpenAIService ai, InMemoryBlogStore store, ILogger<BlogAgentService> logger)
+        public BlogAgentService(OpenAIService ai, BlogDbContext db, ILogger<BlogAgentService> logger)
         {
             _ai = ai;
-            _store = store;
+            _db = db;
             _logger = logger;
         }
 
         public async Task<GeneratedBlog?> GenerateSmartBlogAsync(string category)
         {
-            var recentTitles = _store.GetRecentTitles();
+            var recentTitles = await _db.Blogs
+                .OrderByDescending(b => b.CreatedAt)
+                .Select(b => b.Title!)
+                .Take(10)
+                .ToListAsync();
 
             string prompt = $@"
 Bugün için {category} kategorisinde yaratıcı, özgün ve bilgi dolu bir blog yazısı üret.
@@ -59,14 +64,18 @@ Cevabı şu JSON formatında ver:
             _logger.LogInformation($"✅ Agent tarafından içerik üretildi: {blog?.Title}");
             return blog;
         }
+
         public async Task GenerateSmartBlogAndSave(string category)
         {
             var blog = await GenerateSmartBlogAsync(category);
             if (blog != null)
             {
                 blog.Category = category;
-                _store.Add(blog);
-                _logger.LogInformation($"✅ Hangfire ile eklendi: {blog.Title}");
+                blog.CreatedAt = DateTime.Now; // güvenlik için
+                _db.Blogs.Add(blog);
+                await _db.SaveChangesAsync();
+
+                _logger.LogInformation($"✅ Hangfire ile eklendi (DB): {blog.Title}");
             }
         }
 

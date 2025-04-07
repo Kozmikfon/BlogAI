@@ -12,6 +12,8 @@ using Hangfire.MemoryStorage; // ← hangfire memory
 using System.Globalization;
 using BlogProject.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using BlogProject.Application.Repositories;
+using BlogProject.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +39,10 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<InMemoryBlogStore>();
 builder.Services.AddSingleton<InMemoryCommentStore>();
 builder.Services.AddScoped<BlogAgentService>();
+
+
+builder.Services.AddScoped<IBlogRepository, BlogRepository>();
+
 
 // JWT
 builder.Services.AddScoped<JwtService>();

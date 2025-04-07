@@ -1,6 +1,7 @@
-﻿using BlogProject.Application.Services;
+﻿using BlogProject.Infrastructure.Data;
 using BlogProject.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlogProject.Controllers
 {
@@ -8,58 +9,54 @@ namespace BlogProject.Controllers
     [Route("api/[controller]")]
     public class BlogController : ControllerBase
     {
-        private readonly InMemoryBlogStore _store;
-        private readonly OpenAIService _aiService;
+        private readonly BlogDbContext _db;
 
-        public BlogController(InMemoryBlogStore store, OpenAIService aiService)
+        public BlogController(BlogDbContext db)
         {
-            _store = store;
-            _aiService = aiService;
+            _db = db;
         }
 
-        //  Tüm blogları getir
+        // ✅ Tüm blogları getir
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var blogs = _store.GetAll();
+            var blogs = await _db.Blogs
+                .OrderByDescending(b => b.CreatedAt)
+                .ToListAsync();
+
             return Ok(blogs);
         }
 
-        //  ID'ye göre detay
+        // ✅ ID'ye göre blog getir
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var blog = _store.GetById(id);
-            if (blog == null)
-                return NotFound("Blog bulunamadı.");
+            var blog = await _db.Blogs.FindAsync(id);
+            if (blog == null) return NotFound();
+
             return Ok(blog);
         }
 
-        //  Elle blog üretmek için (opsiyonel)
-        [HttpPost("generate")]
-        public async Task<IActionResult> GenerateNew()
+        // ✅ Yeni blog ekle (manuel kullanım veya test için)
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] GeneratedBlog blog)
         {
-            var result = await _aiService.GenerateSmartBlogAsync();
-            _store.Add(result);
-            return Ok(result);
+            blog.CreatedAt = DateTime.Now;
+            _db.Blogs.Add(blog);
+            await _db.SaveChangesAsync();
+
+            return Ok(blog);
         }
 
+        // ✅ Blog sil
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var success = _store.Delete(id);
-            if (!success)
-                return NotFound();
+            var blog = await _db.Blogs.FindAsync(id);
+            if (blog == null) return NotFound();
 
-            return NoContent();
-        }
-
-        [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody] GeneratedBlog updateBlog)
-        {
-            var success=_store.Update(id, updateBlog);
-            if (!success)
-                return NotFound();
+            _db.Blogs.Remove(blog);
+            await _db.SaveChangesAsync();
 
             return NoContent();
         }
