@@ -10,11 +10,14 @@ using BlogProject.Application.Agents;
 using Hangfire;
 using Hangfire.MemoryStorage; // ← hangfire memory
 using System.Globalization;
+using BlogProject.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- Services ---
-
+builder.Services.AddDbContext<BlogDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
 
 // Swagger
