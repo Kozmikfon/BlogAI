@@ -109,15 +109,26 @@ app.UseEndpoints(endpoints =>
 // 🧠 Hangfire zamanlama
 RecurringJob.AddOrUpdate<BlogAgentService>(
     "ai-blog-generator-00",
-    service => service.GenerateSmartBlogAsync("teknoloji"),
-    "0 0 * * *" // her gün saat 00:00
+    service => service.GenerateSmartBlogAndSave("teknoloji"),
+    "0 0 * * *", // 00:00
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")
+    }
 );
 
 RecurringJob.AddOrUpdate<BlogAgentService>(
     "ai-blog-generator-02",
-    service => service.GenerateSmartBlogAsync("Teknoloji"),
-    "0 2 * * *" // her gün saat 02:00
+    service => service.GenerateSmartBlogAndSave("teknoloji"),
+    "0 2 * * *", // 02:00
+    new RecurringJobOptions
+    {
+        TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")
+    }
 );
+
+
+
 
 
 app.Run();

@@ -67,18 +67,28 @@ Cevabı şu JSON formatında ver:
 
         public async Task GenerateSmartBlogAndSave(string category)
         {
+            // Blog oluştur (AI aracılığıyla)
             var blog = await GenerateSmartBlogAsync(category);
+
             if (blog != null)
             {
                 blog.Category = category;
+
+                // PostgreSQL için UTC zaman kullan
                 blog.CreatedAt = DateTime.UtcNow;
 
+                // Veritabanına ekle
                 _db.Blogs.Add(blog);
                 await _db.SaveChangesAsync();
 
                 _logger.LogInformation($"✅ Hangfire ile eklendi (DB): {blog.Title}");
             }
+            else
+            {
+                _logger.LogWarning("⛔ Blog üretimi başarısız oldu, kayıt yapılmadı.");
+            }
         }
+
 
     }
 }
