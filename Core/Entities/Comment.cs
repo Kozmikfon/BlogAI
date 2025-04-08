@@ -4,12 +4,10 @@
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
-
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public int BlogId { get; set; }
+        public Blog? Blog { get; set; }  // ✅ Nullable hale getir
 
-        // Entity Framework ilişki için (opsiyonel)
-        public Blog? Blog { get; set; }
     }
 }

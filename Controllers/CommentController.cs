@@ -1,41 +1,43 @@
-﻿using BlogProject.Core.Entities;
-using BlogProject.Infrastructure.Data;
+﻿using BlogProject.Application.Services;
+using BlogProject.Core.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BlogProject.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    public class CommentsController : ControllerBase
+    [Route("api/[controller]")]
+    public class CommentController : ControllerBase
     {
-        private readonly BlogDbContext _context;
+        private readonly CommentService _service;
 
-        public CommentsController(BlogDbContext context)
+        public CommentController(CommentService service)
         {
-            _context = context;
+            _service = service;
         }
 
-        // GET: api/comments?blogId=1
-        [HttpGet]
-        public async Task<IActionResult> GetComments(int blogId)
+        // 🧾 Belirli bir bloga ait yorumları getir
+        [HttpGet("byblog/{blogId}")]
+        public async Task<IActionResult> GetByBlog(int blogId)
         {
-            var comments = await _context.Comments
-                .Where(c => c.BlogId == blogId)
-                .OrderByDescending(c => c.CreatedAt)
-                .ToListAsync();
-
+            var comments = await _service.GetByBlogIdAsync(blogId);
             return Ok(comments);
         }
 
-        // POST: api/comments
+        // ➕ Yeni yorum ekle
         [HttpPost]
-        public async Task<IActionResult> AddComment([FromBody] Comment comment)
+        public async Task<IActionResult> Add([FromBody] Comment comment)
         {
-            comment.CreatedAt = DateTime.Now;
-            _context.Comments.Add(comment);
-            await _context.SaveChangesAsync();
-            return Ok(comment);
+            // Güvenlik için CreatedAt burada verilmezse, servis içinde atanmalı
+            var added = await _service.AddCommentAsync(comment);
+            return Ok(added);
+        }
+
+        // ❌ Yorum sil
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var result = await _service.DeleteCommentAsync(id);
+            return result ? Ok("Silindi") : NotFound("Yorum bulunamadı");
         }
     }
 }

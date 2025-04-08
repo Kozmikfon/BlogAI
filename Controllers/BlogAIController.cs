@@ -25,17 +25,14 @@ namespace BlogProject.Controllers
         public async Task<IActionResult> GenerateTestBlog([FromQuery] string category = "teknoloji")
         {
             var agent = HttpContext.RequestServices.GetRequiredService<BlogAgentService>();
-            var store = HttpContext.RequestServices.GetRequiredService<InMemoryBlogStore>();
 
-            var blog = await agent.GenerateSmartBlogAsync(category);
+            // ❗️ Doğrudan DB'ye kayıt eden metodu çağır
+            await agent.GenerateSmartBlogAndSave(category);
 
-            if (blog == null)
-                return StatusCode(500, "AI içerik üretemedi");
-
-            blog.Category = category;
-            store.Add(blog);
-            return Ok(blog);
+            return Ok("✅ Test blog üretildi ve veritabanına kaydedildi.");
         }
+
+
 
 
 

@@ -1,5 +1,8 @@
-﻿namespace BlogProject.Core.Entities
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace BlogProject.Core.Entities
 {
+    [Tags("Blogs")]
     public class Blog
     {
         public int Id { get; set; }

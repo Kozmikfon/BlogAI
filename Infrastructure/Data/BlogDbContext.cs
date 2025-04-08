@@ -26,12 +26,12 @@ namespace BlogProject.Infrastructure.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
             });
 
-            modelBuilder.Entity<Comment>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Text).IsRequired();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
-            });
+            modelBuilder.Entity<Comment>()
+            .HasOne(c => c.Blog)
+            .WithMany()
+            .HasForeignKey(c => c.BlogId)
+            .HasConstraintName("FK_Comments_Blogs_BlogId"); // Not: Hedef tablo `Blogs`
+
         }
     }
 }

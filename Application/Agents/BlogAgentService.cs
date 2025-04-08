@@ -71,7 +71,8 @@ Cevabı şu JSON formatında ver:
             if (blog != null)
             {
                 blog.Category = category;
-                blog.CreatedAt = DateTime.Now; // güvenlik için
+                blog.CreatedAt = DateTime.UtcNow;
+
                 _db.Blogs.Add(blog);
                 await _db.SaveChangesAsync();
 
