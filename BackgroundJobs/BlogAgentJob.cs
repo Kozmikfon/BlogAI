@@ -1,18 +1,20 @@
 ﻿using BlogProject.Application.Agents;
-using BlogProject.Application.Stores;
+using BlogProject.Infrastructure.Data;
 using BlogProject.Core.Entities;
+
 
 namespace BlogProject.BackgroundJobs
 {
     public class BlogAgentJob
     {
         private readonly BlogAgentService _agent;
-        private readonly InMemoryBlogStore _store;
+        private readonly BlogDbContext _db;
 
-        public BlogAgentJob(BlogAgentService agent, InMemoryBlogStore store)
+
+        public BlogAgentJob(BlogAgentService agent, BlogDbContext db)
         {
             _agent = agent;
-            _store = store;
+            _db = db;
         }
 
         public async Task GenerateScheduledBlog(string time)
@@ -26,7 +28,7 @@ namespace BlogProject.BackgroundJobs
             if (blog != null)
             {
                 blog.Category = category;
-                _store.Add(blog);
+                _db.Add(blog);
                 Console.WriteLine($"✅ {time} için blog eklendi: {blog.Title}");
             }
         }

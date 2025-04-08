@@ -1,6 +1,5 @@
 ﻿using BlogProject.Application.Agents;
-using BlogProject.Application.Stores;
-using BlogProject.Core.Entities;
+using BlogProject.Infrastructure.Data; // ✅ EF Core DbContext
 using Microsoft.Extensions.DependencyInjection;
 
 namespace BlogProject.BackgroundJobs
@@ -10,7 +9,7 @@ namespace BlogProject.BackgroundJobs
         private readonly ILogger<BlogGenerationService> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
 
-        private int _lastGeneratedHour = -1; // ✅ En son üretim saati
+        private int _lastGeneratedHour = -1;
 
         public BlogGenerationService(ILogger<BlogGenerationService> logger, IServiceScopeFactory scopeFactory)
         {
@@ -26,35 +25,22 @@ namespace BlogProject.BackgroundJobs
             {
                 var now = DateTime.Now;
 
-                // ✅ Saat 00:00 veya 02:00 ve aynı saat içinde daha önce üretilmemişse
                 if ((now.Hour == 0 || now.Hour == 2) && now.Hour != _lastGeneratedHour)
                 {
                     _lastGeneratedHour = now.Hour;
 
                     using var scope = _scopeFactory.CreateScope();
 
-                    var store = scope.ServiceProvider.GetRequiredService<InMemoryBlogStore>();
                     var aiAgent = scope.ServiceProvider.GetRequiredService<BlogAgentService>();
 
                     string category = GetCategoryForToday(now);
 
                     _logger.LogInformation($"📡 Agent tetiklendi - Kategori: {category}");
 
-                    var blog = await aiAgent.GenerateSmartBlogAsync(category);
-
-                    if (blog != null)
-                    {
-                        blog.Category = category;
-                        store.Add(blog);
-                        _logger.LogInformation($"✅ Blog eklendi: {blog.Title}");
-                    }
-                    else
-                    {
-                        _logger.LogWarning("⛔ Blog üretilemedi.");
-                    }
+                    // 💾 Artık doğrudan DB'ye kaydeden metot
+                    await aiAgent.GenerateSmartBlogAndSave(category);
                 }
 
-                // ⏳ Her dakika kontrol eder
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
         }

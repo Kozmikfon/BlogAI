@@ -23,6 +23,13 @@ namespace BlogProject.Controllers
             return Ok(comments);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAll()
+        {
+            var allComments = await _service.GetAllCommentsAsync();
+            return Ok(allComments);
+        }
+
         // ➕ Yeni yorum ekle
         [HttpPost]
         public async Task<IActionResult> Add([FromBody] Comment comment)
@@ -41,3 +48,4 @@ namespace BlogProject.Controllers
         }
     }
 }
+    

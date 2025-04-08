@@ -12,6 +12,12 @@ namespace BlogProject.Application.Services
         {
             _db = db;
         }
+        public async Task<List<Comment>> GetAllCommentsAsync()
+        {
+            return await _db.Comments
+                .OrderByDescending(c => c.CreatedAt)
+                .ToListAsync();
+        }
 
         public async Task<List<Comment>> GetByBlogIdAsync(int blogId)
         {

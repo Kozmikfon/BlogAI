@@ -35,4 +35,8 @@
     <ContainerPort Include="8081" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Application\Stores\" />
+  </ItemGroup>
+
 </Project>

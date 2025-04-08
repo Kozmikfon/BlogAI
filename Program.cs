@@ -1,5 +1,4 @@
 ﻿using BlogProject.Application.Services;
-using BlogProject.Application.Stores;
 using BlogProject.BackgroundJobs;
 using BlogProject.Core.Entities;
 using Microsoft.OpenApi.Models;
@@ -37,8 +36,7 @@ builder.Services.AddHttpClient<PexelsService>();
 builder.Services.AddHttpClient();
 
 // Blog üretici agent ve store'lar
-builder.Services.AddSingleton<InMemoryBlogStore>();
-builder.Services.AddSingleton<InMemoryCommentStore>();
+
 builder.Services.AddScoped<BlogAgentService>();
 
 
