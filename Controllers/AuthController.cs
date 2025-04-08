@@ -15,16 +15,17 @@ namespace BlogProject.Controllers
         }
 
         [HttpPost("login")]
-        public IActionResult Login([FromBody] LoginRequest request)
+        public IActionResult Login([FromBody] LoginRequest req)
         {
-            if (request.Username == "admin" && request.Password == "blog58/*")
+            if (req.Username == "admin" && req.Password == "blog58/*")
             {
-                var token = _jwtService.GenerateToken(request.Username);
+                var token = _jwtService.GenerateToken("admin");
                 return Ok(new { token });
             }
 
-            return Unauthorized(new { message = "Geçersiz kullanıcı adı veya şifre" });
+            return Unauthorized("Hatalı giriş!");
         }
+
     }
 
     public class LoginRequest
