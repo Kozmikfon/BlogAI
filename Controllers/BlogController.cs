@@ -1,4 +1,5 @@
-﻿using BlogProject.Infrastructure.Data;
+﻿using BlogProject.Core.Entities;
+using BlogProject.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,5 +33,22 @@ namespace BlogProject.Controllers
             if (blog == null) return NotFound();
             return Ok(blog);
         }
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] Blog updatedBlog)
+        {
+            var blog = await _db.Blogs.FindAsync(id);
+            if (blog == null) return NotFound();
+
+            blog.Title = updatedBlog.Title;
+            blog.Content = updatedBlog.Content;
+            blog.Summary = updatedBlog.Summary;
+            blog.Category = updatedBlog.Category;
+            blog.Tags = updatedBlog.Tags;
+            blog.ImageUrl = updatedBlog.ImageUrl;
+
+            await _db.SaveChangesAsync();
+            return Ok(blog);
+        }
+
     }
 }
