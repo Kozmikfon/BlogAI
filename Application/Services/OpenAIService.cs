@@ -74,7 +74,8 @@ namespace BlogProject.Application.Services
                     messages = new[] {
                          new { role = "user", content = prompt }
             },
-                    temperature = 0.8
+                    temperature = 0.8,
+                    max_tokens = 3000
                 };
 
                 var content = new StringContent(
@@ -129,24 +130,27 @@ namespace BlogProject.Application.Services
         }
 
 
+
+
         // AI'den doğrudan JSON blog üret
         private async Task<Blog> GenerateBlogFromAI()
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
             var prompt = @"
-Teknoloji, yapay zeka veya bilimle ilgili bir blog yazısı oluştur.
-Giriş, gelişme, sonuç yapısında olsun.
+Yapay zeka, teknoloji veya bilimle ilgili benzersiz ve özgün bir blog yazısı oluştur.
 
-🎯 Kurallar:
-- İçerik en az **800 kelime** uzunluğunda olsun (çok detaylı yaz)
-- Giriş, gelişme, sonuç bölümleri olsun
-- Gerçek bilgiler ve örneklerle destekle
-- Kategoriyle alakalı etkileyici bir başlık üret
-- Farklı bir konu seç (tekrarlama!)
-- 1-2 cümlelik bir özet yaz
-- 3 adet etiket (virgülle ayır) ver
-- Görsel URL'si verirken sadece ""https://source.unsplash.com/..."" ile başlayan, doğrudan açılabilen bir görsel linki üret.
+📏 Kurallar:
+- İçerik **KESİNLİKLE en az 1000 kelime** olacak. Daha az üretirsen içerik geçersiz sayılacak.
+-- Paragraflar halinde detaylı yaz, örnekler ver, açıklayıcı ol.
+- Blog yazısı detaylı, bilgi dolu ve örneklerle desteklenmiş olsun
+- Akademik ama herkesin anlayacağı şekilde yaz
+- Kategoriyle ilgili farklı ve yaratıcı bir başlık oluştur
+- 1-2 cümlelik etkileyici bir özet ekle
+- 3 tane etiket (virgülle ayır)
+- Gerçek bir görsel URL’si ver (""https://source.unsplash.com/..."")
+- İçerik tek parça olsun, başlık/özet dışında parçalama yapma
+
 
 
 
@@ -166,6 +170,8 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 messages = new[] {
                     new { role = "user", content = prompt }
                 },
+               
+                max_tokens = 3000,// daha fazla içerik üretmesi için yüksek tut
                 temperature = 0.8
             };
 

@@ -18,6 +18,14 @@ namespace BlogProject.Application.Agents
             _db = db;
             _logger = logger;
         }
+        private int GetWordCount(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return 0;
+
+            return text.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
+        }
+
 
         public async Task<Blog?> GenerateSmartBlogAsync(string category)
         {
@@ -28,18 +36,22 @@ namespace BlogProject.Application.Agents
                 .ToListAsync();
 
             string prompt = $@"
-Bugün için {category} kategorisinde yaratıcı, özgün ve bilgi dolu bir blog yazısı üret.
+Bugün için {category} kategorisinde son derece detaylı, teknik, özgün ve bilgi dolu bir blog yazısı üret.
 
-❗️ Son 10 başlık:
+Son 10 başlık:
 - {string.Join("\n- ", recentTitles)}
 
-Bu başlıklara benzemeyen yeni bir konu üret.
-İçeriğin yapısı:
-- Giriş, Gelişme, Sonuç
-- En az 800 kelime
-- 1 özet, 3 etiket, 1 görsel URL
+Bu başlıklardan tamamen farklı, benzersiz bir konu seç.
 
-Cevabı şu JSON formatında ver:
+📌 Kurallar:
+- İçerik **KESİNLİKLE en az 1000 kelime** olacak. Daha az üretirsen içerik geçersiz sayılacak.
+- Konuyu çok derinlemesine anlat, örnekler ve açıklamalarla destekle
+- Yazı halkın anlayacağı sade dille yazılmış olmalı ama yüzeysel olmamalı
+- 1-2 cümlelik etkileyici özet ekle
+- 3 adet etiket ver (virgülle ayır)
+- Görsel URL’si sadece ""https://source.unsplash.com/..."" ile başlamalı
+- **Yalnızca aşağıdaki JSON formatında** yanıt ver, başka açıklama yazma:
+
 {{
   ""title"": ""..."",
   ""summary"": ""..."",
@@ -49,21 +61,36 @@ Cevabı şu JSON formatında ver:
 }}";
 
             var blog = await _ai.GenerateStructuredBlogAsync(prompt, category);
+            var enUzunBlog = blog;
+            int maxWordCount = GetWordCount(blog?.Content ?? "");
 
-            if (blog == null || string.IsNullOrWhiteSpace(blog.Content) || blog.Content.Length < 400)
+            for (int i = 0; i < 2; i++) // Toplam 3 deneme (1+2)
             {
-                _logger.LogWarning("⛔ İçerik kısa. Tekrar deneniyor...");
-                blog = await _ai.GenerateStructuredBlogAsync(prompt, category);
+                if (maxWordCount >= 800)
+                    break;
+
+                _logger.LogWarning($"❗️ İçerik yeterince uzun değil ({maxWordCount} kelime), tekrar deneniyor...");
+
+                var newBlog = await _ai.GenerateStructuredBlogAsync(prompt, category);
+                int newWordCount = GetWordCount(newBlog?.Content ?? "");
+
+                if (newWordCount > maxWordCount)
+                {
+                    enUzunBlog = newBlog;
+                    maxWordCount = newWordCount;
+                }
             }
 
-            if (blog != null && string.IsNullOrWhiteSpace(blog.ImageUrl))
+            if (enUzunBlog != null && string.IsNullOrWhiteSpace(enUzunBlog.ImageUrl))
             {
-                blog.ImageUrl = await _ai.GetImageFromPexelsAsync(category);
+                enUzunBlog.ImageUrl = await _ai.GetImageFromPexelsAsync(category);
             }
 
-            _logger.LogInformation($"✅ Agent tarafından içerik üretildi: {blog?.Title}");
-            return blog;
+            _logger.LogInformation($"✅ AI içerik üretildi: {enUzunBlog?.Title} ({maxWordCount} kelime)");
+            return enUzunBlog;
         }
+
+
 
         public async Task GenerateSmartBlogAndSave(string category)
         {
