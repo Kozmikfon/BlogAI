@@ -15,5 +15,8 @@ namespace BlogProject.Core.Entities
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         public List<Comment> Comments { get; set; } = new();
+        
+
+
     }
 }

@@ -10,6 +10,7 @@ namespace BlogProject.Infrastructure.Data
         public DbSet<Blog> Blogs { get; set; }
         public DbSet<Comment> Comments { get; set; }
 
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -36,6 +37,9 @@ namespace BlogProject.Infrastructure.Data
                 .HasForeignKey(c => c.BlogId)
                 .HasConstraintName("FK_Comments_Blogs_BlogId")
                 .OnDelete(DeleteBehavior.Cascade);
+
+
+
         }
     }
 }
