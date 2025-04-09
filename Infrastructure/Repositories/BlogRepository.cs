@@ -14,17 +14,17 @@ namespace BlogProject.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<List<GeneratedBlog>> GetAllAsync()
+        public async Task<List<Blog>> GetAllAsync()
         {
             return await _context.Blogs.OrderByDescending(x => x.CreatedAt).ToListAsync();
         }
 
-        public async Task<GeneratedBlog?> GetByIdAsync(int id)
+        public async Task<Blog?> GetByIdAsync(int id)
         {
             return await _context.Blogs.FindAsync(id);
         }
 
-        public async Task AddAsync(GeneratedBlog blog)
+        public async Task AddAsync(Blog blog)
         {
             _context.Blogs.Add(blog);
             await _context.SaveChangesAsync();

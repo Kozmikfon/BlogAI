@@ -24,7 +24,7 @@ namespace BlogProject.Application.Services
         }
 
         // Ana metot – agent veya klasik sistem tarafından çağrılır
-        public async Task<GeneratedBlog> GenerateSmartBlogAsync()
+        public async Task<Blog> GenerateSmartBlogAsync()
         {
             try
             {
@@ -42,7 +42,7 @@ namespace BlogProject.Application.Services
             var content = await GenerateBlogTextAsync(topic);
             var title = await GenerateTitleAsync(content);
 
-            return new GeneratedBlog
+            return new Blog
             {
                 Title = title,
                 Summary = content.Substring(0, Math.Min(120, content.Length)) + "...",
@@ -53,7 +53,7 @@ namespace BlogProject.Application.Services
         }
 
         // AI'den yapılandırılmış içerik üret (agent'tan gelen prompt ile)
-        public async Task<GeneratedBlog?> GenerateStructuredBlogAsync(string prompt, string category)
+        public async Task<Blog?> GenerateStructuredBlogAsync(string prompt, string category)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace BlogProject.Application.Services
                     .Replace("```", "")
                     .Trim();
 
-                var result = JsonSerializer.Deserialize<GeneratedBlog>(cleaned!, new JsonSerializerOptions
+                var result = JsonSerializer.Deserialize<Blog>(cleaned!, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
@@ -130,7 +130,7 @@ namespace BlogProject.Application.Services
 
 
         // AI'den doğrudan JSON blog üret
-        private async Task<GeneratedBlog> GenerateBlogFromAI()
+        private async Task<Blog> GenerateBlogFromAI()
         {
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
 
@@ -187,7 +187,7 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 .Replace("```", "")
                 .Trim();
 
-            var result = JsonSerializer.Deserialize<GeneratedBlog>(cleaned!);
+            var result = JsonSerializer.Deserialize<Blog>(cleaned!);
             return result!;
         }
 

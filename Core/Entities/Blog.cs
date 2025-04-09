@@ -12,8 +12,8 @@ namespace BlogProject.Core.Entities
         public string Tags { get; set; } = string.Empty;
         public string Summary { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
-
-
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        public List<Comment> Comments { get; set; } = new();
     }
 }

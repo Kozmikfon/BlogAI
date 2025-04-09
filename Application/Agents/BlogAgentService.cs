@@ -19,7 +19,7 @@ namespace BlogProject.Application.Agents
             _logger = logger;
         }
 
-        public async Task<GeneratedBlog?> GenerateSmartBlogAsync(string category)
+        public async Task<Blog?> GenerateSmartBlogAsync(string category)
         {
             var recentTitles = await _db.Blogs
                 .OrderByDescending(b => b.CreatedAt)

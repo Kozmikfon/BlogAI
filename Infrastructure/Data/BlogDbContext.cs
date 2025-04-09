@@ -7,14 +7,17 @@ namespace BlogProject.Infrastructure.Data
     {
         public BlogDbContext(DbContextOptions<BlogDbContext> options) : base(options) { }
 
-        public DbSet<GeneratedBlog> Blogs { get; set; }
+        public DbSet<Blog> Blogs { get; set; }
         public DbSet<Comment> Comments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<GeneratedBlog>(entity =>
+           
+
+            // ✅ Blog Entity yapılandırması (zorunlu değil ama dilersen ekleyebilirsin)
+            modelBuilder.Entity<Blog>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
@@ -26,12 +29,13 @@ namespace BlogProject.Infrastructure.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("NOW()");
             });
 
+            // ✅ Comment -> Blog ilişkisi
             modelBuilder.Entity<Comment>()
-            .HasOne(c => c.Blog)
-            .WithMany()
-            .HasForeignKey(c => c.BlogId)
-            .HasConstraintName("FK_Comments_Blogs_BlogId"); // Not: Hedef tablo `Blogs`
-
+                .HasOne(c => c.Blog)
+                .WithMany(b => b.Comments)
+                .HasForeignKey(c => c.BlogId)
+                .HasConstraintName("FK_Comments_Blogs_BlogId")
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
