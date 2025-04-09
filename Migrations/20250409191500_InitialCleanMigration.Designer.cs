@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BlogProject.Migrations
 {
     [DbContext(typeof(BlogDbContext))]
-    [Migration("20250407224651_AddCommentFields")]
-    partial class AddCommentFields
+    [Migration("20250409191500_InitialCleanMigration")]
+    partial class InitialCleanMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -77,9 +77,7 @@ namespace BlogProject.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("NOW()");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Text")
                         .IsRequired()
@@ -142,7 +140,8 @@ namespace BlogProject.Migrations
                         .WithMany()
                         .HasForeignKey("BlogId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("FK_Comments_Blogs_BlogId");
 
                     b.Navigation("Blog");
                 });
