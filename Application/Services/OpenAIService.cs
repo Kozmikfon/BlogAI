@@ -1,4 +1,6 @@
 ﻿using BlogProject.Core.Entities;
+using BlogProject.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -9,18 +11,19 @@ namespace BlogProject.Application.Services
     {
         private readonly HttpClient _httpClient;
         private readonly HttpClient _pexelsClient;
-
+        private readonly BlogDbContext _db;
         private readonly string _apiKey;
         private readonly ILogger<OpenAIService> _logger;
         private readonly IConfiguration _configuration;
 
-        public OpenAIService(HttpClient httpClient, IHttpClientFactory clientFactory, IConfiguration config, ILogger<OpenAIService> logger)
+        public OpenAIService(HttpClient httpClient, BlogDbContext db, IHttpClientFactory clientFactory, IConfiguration config, ILogger<OpenAIService> logger)
         {
             _httpClient = httpClient;
             _pexelsClient = clientFactory.CreateClient(); // yeni client
             _configuration = config;
             _apiKey = config["OpenAI:ApiKey"]!;
             _logger = logger;
+            _db = db;
         }
 
         // Ana metot – agent veya klasik sistem tarafından çağrılır
@@ -250,6 +253,12 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 var searchQuery = TranslateCategory(category);
                 _logger.LogInformation($"📷 Pexels araması yapılıyor: {searchQuery}");
 
+                // 🧠 Veritabanında daha önce kullanılan görselleri çek
+                var usedImageUrls = await _db.Blogs
+                    .Where(b => !string.IsNullOrEmpty(b.ImageUrl))
+                    .Select(b => b.ImageUrl)
+                    .ToListAsync();
+
                 var response = await _httpClient.GetAsync($"https://api.pexels.com/v1/search?query={searchQuery}&per_page=15");
                 var json = await response.Content.ReadAsStringAsync();
 
@@ -259,8 +268,27 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
                 if (photos.GetArrayLength() > 0)
                 {
                     var rnd = new Random();
-                    var index = rnd.Next(photos.GetArrayLength());
-                    var imageUrl = photos[index].GetProperty("src").GetProperty("medium").GetString();
+                    string? imageUrl = null;
+                    int retryCount = 10;
+
+                    while (retryCount-- > 0)
+                    {
+                        var index = rnd.Next(photos.GetArrayLength());
+                        var candidate = photos[index].GetProperty("src").GetProperty("medium").GetString();
+
+                        if (!usedImageUrls.Contains(candidate))
+                        {
+                            imageUrl = candidate;
+                            break;
+                        }
+                    }
+
+                    if (imageUrl == null)
+                    {
+                        imageUrl = photos[0].GetProperty("src").GetProperty("medium").GetString();
+                        _logger.LogWarning("⚠️ Tüm resimler daha önce kullanılmıştı, ilk görsel tekrar seçildi.");
+                    }
+
                     return imageUrl!;
                 }
 
@@ -273,6 +301,7 @@ Cevabı şu formatta ve SADECE JSON olarak döndür:
 
             return "https://via.placeholder.com/600x400?text=No+Image";
         }
+
 
 
 

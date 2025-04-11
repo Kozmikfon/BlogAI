@@ -49,6 +49,17 @@ namespace BlogProject.Controllers
             await _db.SaveChangesAsync();
             return Ok(blog);
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var blog = await _db.Blogs.FindAsync(id);
+            if (blog == null) return NotFound();
+
+            _db.Blogs.Remove(blog);
+            await _db.SaveChangesAsync();
+
+            return NoContent();
+        }
 
     }
 }
