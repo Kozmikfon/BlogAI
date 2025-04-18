@@ -13,7 +13,7 @@ using BlogProject.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using BlogProject.Application.Repositories;
 using BlogProject.Infrastructure.Repositories;
-using BlogProject.Application.Jobs;
+
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -84,7 +84,7 @@ builder.Services.AddHangfireServer(); // Worker başlat
 
 // Background Service (manuel tetikleme için hâlâ mevcut)
 //builder.Services.AddHostedService<BlogGenerationService>();
-builder.Services.AddScoped<BlogCleanupJob>();
+
 
 // --- App Build ---
 var app = builder.Build();
@@ -128,13 +128,6 @@ RecurringJob.AddOrUpdate<BlogAgentService>(
     {
         TimeZone = TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time")
     }
-);
-
-RecurringJob.AddOrUpdate<BlogCleanupJob>(
-    "cleanup-old-blogs",
-    job => job.DeleteOldBlogsAsync(),
-    "0 3 * * *", // Her gün saat 03:00
-    TimeZoneInfo.Local // Türkiye saati uyumlu
 );
 
 
